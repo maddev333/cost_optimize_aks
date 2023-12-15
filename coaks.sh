@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Run at 7 AM and 7 PM every day except Saturday and Sunday
+#0 7,19 * * 1-5 /path/to/your/script.sh
 # Set your Azure subscription ID and resource group name
 subscription_id="8e09ea39-a872-4c44-91e8-b80ddcafcd7c"
 resource_group="my-calico-rg"
