@@ -8,9 +8,13 @@ resource_group="my-calico-rg"
 aks_cluster="myAKSCluster"
 storage_account="myAKSCluster"
 backup_container="backup"
-alert_names=(
+metric_alert_names=(
     "CPU Usage Percentage - myAKSCluster"
     "Memory Working Set Percentage - myAKSCluster"
+    "80 percent"
+)
+log_search_alert_names=(
+    "log_query"
 )
 
 # Get the current time in Eastern Standard Time
@@ -52,10 +56,20 @@ get_cluster_details() {
 turn_off_cluster() {
     verify_cluster_status
     if [ "$cluster_status" == "Running" ]; then
-       echo "Disabling alerts..."
-       for alert in "${alert_names[@]}"; do
+       echo "Disabling metric alerts..."
+       for alert in "${metric_alert_names[@]}"; do
            az monitor metrics alert update -g $resource_group -n "$alert" --enable false
        done
+       if [ $? -gt 0 ]; then
+         echo "Error - Please check alert status"
+       fi
+       echo "Disabling log search alerts..."
+       for log_alert in "${log_search_alert_names[@]}"; do
+           az monitor scheduled-query update --name "$log_alert" --resource-group $resource_group --disable true
+       done
+       if [ $? -gt 0 ]; then
+         echo "Error - Please check alert status"
+       fi
        echo "Turning off AKS cluster..."
        az aks stop --resource-group $resource_group --name $aks_cluster
     fi
@@ -67,9 +81,18 @@ turn_on_cluster() {
        echo "Turning on AKS cluster..."
        az aks start --resource-group $resource_group --name $aks_cluster
        echo "Enabling alerts..."
-       for alert in "${alert_names[@]}"; do
+       for alert in "${metric_alert_names[@]}"; do
            az monitor metrics alert update -g $resource_group  -n "$alert" --enable true
        done
+       if [ $? -gt 0 ]; then
+        echo "Error - Please check alert status"
+       fi
+       for log_alert in "${log_search_alert_names[@]}"; do
+           az monitor scheduled-query update --name "$log_alert" --resource-group $resource_group --disable false
+       done
+       if [ $? -gt 0 ]; then
+         echo "Error - Please check alert status"
+       fi
     fi
 }
 # Function to perform cleanup (delete backups older than a certain period)
